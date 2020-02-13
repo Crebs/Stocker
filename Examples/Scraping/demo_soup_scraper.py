@@ -35,11 +35,12 @@ for t in stock_symols:
     quote_page = 'http://financials.morningstar.com/ratios/r.html?t='+t+'&region=usa&culture=en-US'
 
     try:
-      driver.get(quote_page)
-    except ValueError:
-      print ('Failed to load page for stock symbol: ' + t)
-      continue
+        driver.get(quote_page)
+    except:
+        print ('General Exception for stock symbol: ' + t)
+        continue
 
+    #begin scraping the webpage
     content = driver.page_source
     soup = BeautifulSoup(content, 'lxml')
 
@@ -114,12 +115,15 @@ for t in stock_symols:
 
                 if last_price_span is not None:
                     if float(last_price_span.text) < intrinsic_value:
-                        print('UNDERVALUED STOCK')
-                        print('symbol: ' + t)
-                        print (df)
-                        print('Last Price: ' + last_price_span.text)
-                        print('Intrinsic Value: ' + str(intrinsic_value))
-                        print('Average Return on Invested Capital: '+ str(avg_roic))
+                        with open('Stocks.txt', 'a+') as filehandle:
+                            filehandle.write('\n\n##### UNDERVALUED STOCK #####\n')
+                            filehandle.write('symbol: %s\n' % t)
+                            filehandle.write (df.to_string())
+                            filehandle.write('\n\nLast Price: %s\n' % last_price_span.text)
+                            filehandle.write('Intrinsic Value: %s\n' % str(intrinsic_value))
+                            filehandle.write('Average Return on Invested Capital: %s\n' % str(avg_roic))
+
+
         else:
             print ("Issue evaluating " + t)
 
