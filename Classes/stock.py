@@ -1,6 +1,14 @@
 # import libraries
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import pandas as pd
+
+def isfloat(value):
+  try:
+    float(value)
+    return True
+  except ValueError:
+    return False
 
 class Stock(object):
     """Call representing a  Stock."""
@@ -10,7 +18,25 @@ class Stock(object):
         self.soup = None
         self.symbol = symbol
         self.web_driver = web_driver
+        self.df = None
         self.__get_quote()
+
+    def scrape(self):
+        # Collect Dates
+        profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
+        dates = []
+        for sibling in profit_header.next_siblings:
+            dates.append(sibling.text)
+        roic_values = self.__roic_values()
+        # initialise data of lists.
+        data = {'ROIC':roic_values}
+        self.df = pd.DataFrame(data, index=dates)
+        print (self.df.to_string())
+        return self.df
+
+    def save(self):
+        file_name = self.symbol + '.csv'
+        self.df.to_csv('Data/' + file_name, index=True)
 
     def current_stock_price(self):
         current_price = ''
@@ -35,6 +61,19 @@ class Stock(object):
         content = self.web_driver.page_source
         self.soup = BeautifulSoup(content, 'lxml')
 
+    def __roic_values(self):
+        # Return on Invested Capital
+        roic_box = self.soup.find('th', attrs={'id': 'i27'})
+        # Collect Values
+        values = []
+        for child in roic_box.parent.findAll('td'):
+            value = child.text
+            if isfloat(value):
+                values.append(float(value))
+            else:
+                values.append(0)
+        return values
+
 
     def free_cash_flow_per_share(self):
         cf_values = []
@@ -47,19 +86,6 @@ class Stock(object):
                 else:
                     cf_values.append(0)
         return cf_values
-
-    def return_on_capital_invested(self):
-        values = []
-        # Return on Invested Capital
-        roic_box = soup.find('th', attrs={'id': 'i27'})
-        # Collect Values
-        for child in roic_box.parent.findAll('td'):
-            value = child.text
-            if isfloat(value):
-                values.append(float(value))
-            else:
-                values.append(0)
-        return values
 
     def instrinsic_value(self, cf_past, cf_recent):
         # Calcualte Intrinsic Value of the stock
