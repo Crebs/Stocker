@@ -2,6 +2,9 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import pandas as pd
+import os
+import time
+
 
 def isfloat(value):
   try:
@@ -19,73 +22,47 @@ class Stock(object):
         self.symbol = symbol
         self.web_driver = web_driver
         self.df = None
-        self.__get_quote()
 
     def scrape(self):
-        # Collect Dates
-        profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
-        dates = []
-        for sibling in profit_header.next_siblings:
-            dates.append(sibling.text)
-        roic_values = self.__roic_values()
-        # initialise data of lists.
-        data = {'ROIC':roic_values}
-        self.df = pd.DataFrame(data, index=dates)
-        print (self.df.to_string())
+        self.df = self.__quote_from_disk()
+        if self.df is None:
+            self.__get_quote()
+            # Collect Dates
+            if self.soup is not None:
+                profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
+                dates = []
+                if profit_header is not None:
+                    for sibling in profit_header.next_siblings:
+                        dates.append(sibling.text)
+                    roic_values = self.__roic_values()
+                    fcfps_values = self.__free_cash_flow_per_share()
+                    # initialise data of lists.
+                    data = {'ROIC':roic_values, 'FCFPS':fcfps_values,}
+                    if len(data) > 0:
+                        try:
+                            self.df = pd.DataFrame(data, index=dates)
+                        except Exception as e:
+                            print('value issue with ' + self.symbol)
+                            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
+                                filehandle.write("%s\n" % self.symbol)
+                            self.df = None
+            else:
+                print('soup None on ' + self.symbol)
+
+
         return self.df
 
     def save(self):
         file_name = self.symbol + '.csv'
-        self.df.to_csv('Data/' + file_name, index=True)
+        if self.df is not None:
+            self.df.to_csv('Data/' + file_name, index=True)
 
-    def current_stock_price(self):
-        current_price = ''
-        quote_page = 'http://performance.morningstar.com/stock/performance-return.action?t='+self.symbol+'&region=usa&culture=en-US'
+    def delete(self):
+        file_name = self.symbol + '.csv'
         try:
-            self.web_driver.get(quote_page)
-            soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
-            current_price = soup.find('span', attrs={'id': 'last-price-value'})
-        except Exception as e:
-            print ('Exception get current price for stock symbol: ' + self.symbol)
-        return current_price
-
-    # Private method to get stock quote from web scraping
-    def __get_quote(self):
-        quote_page = 'http://financials.morningstar.com/ratios/r.html?t='+self.symbol+'&region=usa&culture=en-US'
-        try:
-            self.web_driver.get(quote_page)
-        except:
-            print ('General Exception for stock symbol: ' + self.symbol)
-
-        #begin scraping the webpage
-        content = self.web_driver.page_source
-        self.soup = BeautifulSoup(content, 'lxml')
-
-    def __roic_values(self):
-        # Return on Invested Capital
-        roic_box = self.soup.find('th', attrs={'id': 'i27'})
-        # Collect Values
-        values = []
-        for child in roic_box.parent.findAll('td'):
-            value = child.text
-            if isfloat(value):
-                values.append(float(value))
-            else:
-                values.append(0)
-        return values
-
-
-    def free_cash_flow_per_share(self):
-        cf_values = []
-        free_cash_flow_per_share_header = self.soup.find('th', attrs={'id': 'i90'})
-        if free_cash_flow_per_share_header is not None:
-            for child in free_cash_flow_per_share_header.parent.findAll('td'):
-                value = child.text
-                if isfloat(value):
-                    cf_values.append(float(child.text))
-                else:
-                    cf_values.append(0)
-        return cf_values
+            os.remove('Data/'+ file_name)
+        except FileNotFoundError:
+            print('Not able to delete '+ file_name + ', file not found')
 
     def instrinsic_value(self, cf_past, cf_recent):
         # Calcualte Intrinsic Value of the stock
@@ -107,3 +84,65 @@ class Stock(object):
         num_of_years = 5
         intrinsic_value = (terminal_value+d_cf)/(1+discout_rate)**num_of_years
         return intrinsic_value
+
+
+    def current_stock_price(self):
+        current_price = ''
+        quote_page = 'http://performance.morningstar.com/stock/performance-return.action?t='+self.symbol+'&region=usa&culture=en-US'
+        try:
+            self.web_driver.get(quote_page)
+            soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
+            current_price = soup.find('span', attrs={'id': 'last-price-value'})
+        except Exception as e:
+            print ('Exception get current price for stock symbol: ' + self.symbol)
+            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
+                filehandle.write("%s\n" % self.symbol)
+        return current_price
+
+    def __quote_from_disk(self):
+        try:
+            return pd.read_csv('Data/' + self.symbol + '.csv')
+        except FileNotFoundError:
+            return None
+
+    # Private method to get stock quote from web scraping
+    def __get_quote(self):
+        if self.df is None:
+            quote_page = 'http://financials.morningstar.com/ratios/r.html?t='+self.symbol+'&region=usa&culture=en-US'
+            try:
+                time.sleep(2.5)
+                self.web_driver.get(quote_page)
+                self.soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
+            except:
+                print ('General Exception for stock symbol: ' + self.symbol)
+                with open('not_found_stock_symbols.txt', 'a+') as filehandle:
+                    filehandle.write("%s\n" % self.symbol)
+        else:
+            print('Symbol read from disk. Skipping network request.')
+
+
+    def __roic_values(self):
+        # Return on Invested Capital
+        roic_box = self.soup.find('th', attrs={'id': 'i27'})
+        # Collect Values
+        values = []
+        for child in roic_box.parent.findAll('td'):
+            value = child.text
+            if isfloat(value):
+                values.append(float(value))
+            else:
+                values.append(0)
+        return values
+
+
+    def __free_cash_flow_per_share(self):
+        cf_values = []
+        free_cash_flow_per_share_header = self.soup.find('th', attrs={'id': 'i90'})
+        if free_cash_flow_per_share_header is not None:
+            for child in free_cash_flow_per_share_header.parent.findAll('td'):
+                value = child.text
+                if isfloat(value):
+                    cf_values.append(float(child.text))
+                else:
+                    cf_values.append(0)
+        return cf_values

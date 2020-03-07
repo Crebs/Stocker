@@ -9,25 +9,24 @@ class TestStockClass(unittest.TestCase):
 
     def setUp(self):
         self.driver = webdriver.Safari()
+        self.test_symbol = 'AAPL'
+        self.sut = Stock(self.test_symbol, self.driver)
 
     def tearDown(self):
-        print('tear down')
         self.driver.quit()
+        self.sut.delete()
 
     def test_current_price(self):
-        # Setup
-        stock = Stock('AAPL', self.driver)
-        # Test
-        current_price = stock.current_stock_price()
+        # Setup and Test
+        current_price = self.sut.current_stock_price()
         # Validate
         self.assertIsNotNone(current_price, 'current price should NOT return None')
 
     def test_save(self):
         # Setup
-        stock = Stock('AAPL', self.driver)
-        stock.scrape()
+        self.sut.scrape()
         # Test
-        saved = stock.save()
+        saved = self.sut.save()
         # Validate
         df = pd.read_csv('Data/' + 'AAPL.csv')
         self.assertIsNotNone(df, 'Dataframe should not be None')
