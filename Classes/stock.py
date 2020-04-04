@@ -113,7 +113,6 @@ class Stock(object):
     def __quote_from_disk(self):
         try:
             df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
-            print (df.to_string())
             return df
         except Exception as e:
             print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.message)
