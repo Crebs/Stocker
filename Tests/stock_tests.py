@@ -14,7 +14,7 @@ class TestStockClass(unittest.TestCase):
 
     def tearDown(self):
         self.driver.quit()
-        self.sut.delete()
+        # self.sut.delete()
 
     def test_current_price(self):
         # Setup and Test
@@ -24,12 +24,19 @@ class TestStockClass(unittest.TestCase):
 
     def test_save(self):
         # Setup
-        self.sut.scrape()
         # Test
-        saved = self.sut.save()
+        self.sut.save()
         # Validate
         df = pd.read_csv('Data/' + 'AAPL.csv')
         self.assertIsNotNone(df, 'Dataframe should not be None')
+
+    def test_intrinsic_value(self):
+        # Setup
+        # Test
+        intrinsic_value = self.sut.intrinsic_value()
+
+        # Validate
+        self.assertGreater(intrinsic_value, 0, "intrinsit value should be greater than zero")
 
 if __name__ == "__main__":
     unittest.main()

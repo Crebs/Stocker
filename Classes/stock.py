@@ -13,6 +13,7 @@ def isfloat(value):
   except ValueError:
     return False
 
+index_name = 'Date'
 class Stock(object):
     """Call representing a  Stock."""
 
@@ -22,35 +23,8 @@ class Stock(object):
         self.symbol = symbol
         self.web_driver = web_driver
         self.df = None
-
-    def scrape(self):
-        self.df = self.__quote_from_disk()
-        if self.df is None:
-            self.__get_quote()
-            # Collect Dates
-            if self.soup is not None:
-                profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
-                dates = []
-                if profit_header is not None:
-                    for sibling in profit_header.next_siblings:
-                        dates.append(sibling.text)
-                    roic_values = self.__roic_values()
-                    fcfps_values = self.__free_cash_flow_per_share()
-                    # initialise data of lists.
-                    data = {'ROIC':roic_values, 'FCFPS':fcfps_values,}
-                    if len(data) > 0:
-                        try:
-                            self.df = pd.DataFrame(data, index=dates)
-                        except Exception as e:
-                            print('value issue with ' + self.symbol)
-                            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
-                                filehandle.write("%s\n" % self.symbol)
-                            self.df = None
-            else:
-                print('soup None on ' + self.symbol)
-
-
-        return self.df
+        # Need to scrape all the data for the stock before any calculations can be performed
+        self.__scrape()
 
     def save(self):
         file_name = self.symbol + '.csv'
@@ -61,15 +35,21 @@ class Stock(object):
         file_name = self.symbol + '.csv'
         try:
             os.remove('Data/'+ file_name)
-        except FileNotFoundError:
+        except Exception:
             print('Not able to delete '+ file_name + ', file not found')
 
-    def instrinsic_value(self, cf_past, cf_recent):
+    def is_a_buy(self):
+        #TODO: need to come up with buying rules.  Also, can we add Machine learning or AI here?
+        iv = self.intrinsic_value()
+        cv = float(self.current_stock_price())
+        return iv > cv
+
+    def intrinsic_value(self):
         # Calcualte Intrinsic Value of the stock
-        cf_range = df.iloc[[-7,-2],[0]]
+        cf_range = self.df.iloc[[-7,-2],[0]]
         cf_past = cf_range.iat[0,0]
         cf_recent = cf_range.iat[-1,0]
-        annual_growth_rate = ((cf_recent/cf_past)**(1/5))-1
+        annual_growth_rate = ((cf_recent/cf_past)**(1.0/5.0))-1.0
         f_values = []
         for i in range(1,6):
             f_values.append(cf_recent*(1+annual_growth_rate)**i)
@@ -92,17 +72,51 @@ class Stock(object):
         try:
             self.web_driver.get(quote_page)
             soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
-            current_price = soup.find('span', attrs={'id': 'last-price-value'})
-        except Exception as e:
+            current_price = soup.find('span', attrs={'id': 'last-price-value'}).text
+        except Exception:
             print ('Exception get current price for stock symbol: ' + self.symbol)
             with open('not_found_stock_symbols.txt', 'a+') as filehandle:
                 filehandle.write("%s\n" % self.symbol)
         return current_price
 
+    def __scrape(self):
+        self.df = self.__quote_from_disk()
+        if self.df is None:
+            self.__get_quote()
+            # Collect Dates
+            if self.soup is not None:
+                profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
+                dates = []
+                if profit_header is not None:
+                    for sibling in profit_header.next_siblings:
+                        dates.append(sibling.text)
+                    roic_values = self.__roic_values()
+                    fcfps_values = self.__free_cash_flow_per_share()
+                    # initialise data of lists.
+                    data = {'ROIC':roic_values, 'FCFPS':fcfps_values,}
+                    if len(data) > 0:
+                        try:
+                            self.df = pd.DataFrame(data, index=dates)
+                            self.df.index.name = index_name
+                            self.save()
+                        except Exception as e:
+                            print('value issue with ' + self.symbol + ' error: ' + e.message)
+                            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
+                                filehandle.write("%s\n" % self.symbol)
+                            self.df = None
+            else:
+                print('soup None on ' + self.symbol)
+
+
+        return self.df
+
     def __quote_from_disk(self):
         try:
-            return pd.read_csv('Data/' + self.symbol + '.csv')
-        except FileNotFoundError:
+            df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
+            print (df.to_string())
+            return df
+        except Exception as e:
+            print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.message)
             return None
 
     # Private method to get stock quote from web scraping
