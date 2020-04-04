@@ -18,6 +18,9 @@ Anaconda® is a package manager, an environment manager, a Python/R data science
 
 After you install Anaconda® you may need to restart/refresh you terminal.
 
+### Allow Remote Automation
+To allow Stocker to scrape the internet on Safari go into Preference -> Advanced and check box label `Show Develop menu in menu bar.  Then select Developer -> Allow Remote Automation.
+
 ### Done
 In the words of the infamous Porky Pig, "That's all Folks!".  Your environment should be ready to use Stocker.
 
@@ -30,3 +33,7 @@ Unit tests are setup to use Python's build in Unit testing framework.  Please re
 ## Run Unit Tests
 In order to run you unit test they need to be run as modules/packages - use the -m argument.  See the example below to run as as terminal command at root:
 `python -m Tests.stock_tests`
+
+# Run Stocker
+To run Stocker make sure you're at root and run the following command:
+`python -m Classes.runner`
