@@ -41,28 +41,34 @@ class Stock(object):
     def is_a_buy(self):
         #TODO: need to come up with buying rules.  Also, can we add Machine learning or AI here?
         iv = self.intrinsic_value()
-        cv = float(self.current_stock_price())
+        try:
+            cv = float(self.current_stock_price())
+        except Exception:
+            cv = 0
         return iv > cv
 
     def intrinsic_value(self):
-        # Calcualte Intrinsic Value of the stock
-        cf_range = self.df.iloc[[-7,-2],[0]]
-        cf_past = cf_range.iat[0,0]
-        cf_recent = cf_range.iat[-1,0]
-        annual_growth_rate = ((cf_recent/cf_past)**(1.0/5.0))-1.0
-        f_values = []
-        for i in range(1,6):
-            f_values.append(cf_recent*(1+annual_growth_rate)**i)
-        # 10% rate of return is the more normal
-        discout_rate = 0.1
-        d_cf = 0
-        for i in range(1,6):
-            d_cf += f_values[i-1]/((1+discout_rate)**i)
-        # Normal Rate of GDP is about 3%
-        growth_rate = 0.03
-        terminal_value = (f_values[-1]*(1+growth_rate))/(discout_rate-growth_rate)
-        num_of_years = 5
-        intrinsic_value = (terminal_value+d_cf)/(1+discout_rate)**num_of_years
+        try:
+            # Calcualte Intrinsic Value of the stock
+            cf_range = self.df.iloc[[-7,-2],[0]]
+            cf_past = cf_range.iat[0,0]
+            cf_recent = cf_range.iat[-1,0]
+            annual_growth_rate = ((cf_recent/cf_past)**(1.0/5.0))-1.0
+            f_values = []
+            for i in range(1,6):
+                f_values.append(cf_recent*(1+annual_growth_rate)**i)
+            # 10% rate of return is the more normal
+            discout_rate = 0.1
+            d_cf = 0
+            for i in range(1,6):
+                d_cf += f_values[i-1]/((1+discout_rate)**i)
+            # Normal Rate of GDP is about 3%
+            growth_rate = 0.03
+            terminal_value = (f_values[-1]*(1+growth_rate))/(discout_rate-growth_rate)
+            num_of_years = 5
+            intrinsic_value = (terminal_value+d_cf)/(1+discout_rate)**num_of_years
+        except Exception:
+            intrinsic_value = 0
         return intrinsic_value
 
 
@@ -113,7 +119,6 @@ class Stock(object):
     def __quote_from_disk(self):
         try:
             df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
-            print (df.to_string())
             return df
         except Exception as e:
             print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.message)
