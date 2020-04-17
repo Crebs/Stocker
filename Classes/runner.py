@@ -24,7 +24,8 @@ class Runner(object):
                 current_value = stock.current_stock_price()
                 print "intrinsic value: " + str(intrinsic_value)
                 print "current value: " + str(current_value)
-                print "dataframe: " + stock.df.to_string()
+                if stock.df is not None:
+                    print "dataframe: " + stock.df.to_string()
                 print "is a good buy: " + str(stock.is_a_buy())
                 
 
