@@ -67,7 +67,7 @@ class Stock(object):
             terminal_value = (f_values[-1]*(1+growth_rate))/(discout_rate-growth_rate)
             num_of_years = 5
             intrinsic_value = (terminal_value+d_cf)/(1+discout_rate)**num_of_years
-        except Exception:
+        except Exception as e:
             intrinsic_value = 0
         return intrinsic_value
 
@@ -77,10 +77,10 @@ class Stock(object):
         quote_page = 'http://performance.morningstar.com/stock/performance-return.action?t='+self.symbol+'&region=usa&culture=en-US'
         try:
             self.web_driver.get(quote_page)
-            soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
+            soup = BeautifulSoup(self.web_driver.page_source, features="html.parser")
             current_price = soup.find('span', attrs={'id': 'last-price-value'}).text
-        except Exception:
-            print ('Exception get current price for stock symbol: ' + self.symbol)
+        except Exception as e:
+            print ('Exception get current price for stock symbol: ' + self.symbol + " with error " + e.strerror)
             with open('not_found_stock_symbols.txt', 'a+') as filehandle:
                 filehandle.write("%s\n" % self.symbol)
         return current_price
@@ -106,7 +106,7 @@ class Stock(object):
                             self.df.index.name = index_name
                             self.save()
                         except Exception as e:
-                            print('value issue with ' + self.symbol + ' error: ' + e.message)
+                            print('value issue with ' + self.symbol + ' error: ' + e.strerror)
                             with open('not_found_stock_symbols.txt', 'a+') as filehandle:
                                 filehandle.write("%s\n" % self.symbol)
                             self.df = None
@@ -121,7 +121,7 @@ class Stock(object):
             df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
             return df
         except Exception as e:
-            print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.message)
+            print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.strerror)
             return None
 
     # Private method to get stock quote from web scraping
@@ -131,7 +131,7 @@ class Stock(object):
             try:
                 time.sleep(2.5)
                 self.web_driver.get(quote_page)
-                self.soup = BeautifulSoup(self.web_driver.page_source, 'lxml')
+                self.soup = BeautifulSoup(self.web_driver.page_source, features="html.parser")
             except:
                 print ('General Exception for stock symbol: ' + self.symbol)
                 with open('not_found_stock_symbols.txt', 'a+') as filehandle:
