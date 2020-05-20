@@ -9,7 +9,7 @@ class TestStockClass(unittest.TestCase):
 
     def setUp(self):
         self.driver = webdriver.Safari()
-        self.test_symbol = 'AAPL'
+        self.test_symbol = 'TGT'
         self.sut = Stock(self.test_symbol, self.driver)
 
     def tearDown(self):
