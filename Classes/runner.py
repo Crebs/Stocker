@@ -36,19 +36,25 @@ if __name__ == "__main__":
     outputfile = ''
     argv = sys.argv[1:]
     try:
-        opts, args = getopt.getopt(argv, "hi:o:", ["ifile=","ofile="])
+        opts, args = getopt.getopt(argv, "d:hi:o:", ["driver=", "ifile=","ofile="])
     except getopt.GetoptError:
-        print ('Classes.runner -i <inputfile> -o <outputfile>')
+        print ('Error: Classes.runner -d <webdriver> -i <inputfile> -o <outputfile>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print ('Classes.runner -i <inputfile> -o <outputfile>')
+            print ('Classes.runner -d <webdriver> -i <inputfile> -o <outputfile>')
             sys.exit()
+        elif opt in ("-d", "--driver"):
+            if arg == "safari":
+                driver = webdriver.Safari()
+            elif arg == "firefox":
+                driver = webdriver.Firefox()
+
         elif opt in ("-i", "--file"):
             inputfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
-    driver = webdriver.Safari()
+    
     runner = Runner(driver, inputfile)
     runner.start()
     driver.quit()
