@@ -18,17 +18,20 @@ class Runner(object):
     def start(self):
         for symbol in self.market.symbols:
             if len(symbol) > 0:
-                print ("########################")
-                print ("Scraping symbol: " + symbol)
                 stock = Stock(symbol, self.web_driver)
-                intrinsic_value = stock.intrinsic_value()
-                current_value = stock.current_stock_price()
-                print ("intrinsic value: " + str(intrinsic_value))
-                print ("current value: " + str(current_value))
-                if stock.df is not None:
-                    print ("dataframe: " + stock.df.to_string())
-                print ("is a good buy: " + str(stock.is_a_buy()))
-                print ("\n\n")
+                current_value = float(stock.current_stock_price())
+                intrinsic_value = float(stock.intrinsic_value())
+                discounted = bool(intrinsic_value > current_value)
+                # Output discounted stocks only
+                if discounted:
+                    print ("########################")
+                    print ("Scraping symbol: " + symbol)
+                    print ("current value: " + str(current_value))
+                    print ("intrinsic value: " + str(intrinsic_value))
+                    if stock.df is not None:
+                        print ("dataframe: " + stock.df.to_string())
+                    print ("Discounted: " + str(discounted))
+                    print ("\n\n")
                 
 
 if __name__ == "__main__":
