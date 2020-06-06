@@ -34,6 +34,7 @@ class Runner(object):
 if __name__ == "__main__":
     inputfile = None
     outputfile = ''
+    driver = None
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(argv, "d:hi:o:", ["driver=", "ifile=","ofile="])

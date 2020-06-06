@@ -50,9 +50,9 @@ class Stock(object):
     def intrinsic_value(self):
         try:
             # Calcualte Intrinsic Value of the stock
-            cf_range = self.df.iloc[[-7,-2],[0]]
-            cf_past = cf_range.iat[0,0]
-            cf_recent = cf_range.iat[-1,0]
+            cf_range = self.df.iloc[[-6,-2],:]["FCFPS"]
+            cf_past = cf_range.iloc[0]
+            cf_recent = cf_range.iloc[-1]
             annual_growth_rate = ((cf_recent/cf_past)**(1.0/5.0))-1.0
             f_values = []
             for i in range(1,6):
@@ -80,7 +80,7 @@ class Stock(object):
             soup = BeautifulSoup(self.web_driver.page_source, features="html.parser")
             current_price = soup.find('span', attrs={'id': 'last-price-value'}).text
         except Exception as e:
-            print ('Exception get current price for stock symbol: ' + self.symbol + " with error " + e.strerror)
+            print ('Exception get current price for stock symbol: ' + self.symbol)
             with open('not_found_stock_symbols.txt', 'a+') as filehandle:
                 filehandle.write("%s\n" % self.symbol)
         return current_price
@@ -106,7 +106,7 @@ class Stock(object):
                             self.df.index.name = index_name
                             self.save()
                         except Exception as e:
-                            print('value issue with ' + self.symbol + ' error: ' + e.strerror)
+                            print('value issue with ' + self.symbol)
                             with open('not_found_stock_symbols.txt', 'a+') as filehandle:
                                 filehandle.write("%s\n" % self.symbol)
                             self.df = None
@@ -121,7 +121,7 @@ class Stock(object):
             df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
             return df
         except Exception as e:
-            print ('Exception getting quote from disk: ' + self.symbol + ' reason ' + e.strerror)
+            print ('Exception getting quote from disk: ' + self.symbol)
             return None
 
     # Private method to get stock quote from web scraping
