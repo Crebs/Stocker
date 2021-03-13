@@ -73,7 +73,7 @@ class Stock(object):
 
 
     def current_stock_price(self):
-        current_price = ''
+        current_price = '0'
         quote_page = 'http://performance.morningstar.com/stock/performance-return.action?t='+self.symbol+'&region=usa&culture=en-US'
         try:
             self.web_driver.get(quote_page)

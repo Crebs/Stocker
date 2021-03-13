@@ -23,15 +23,23 @@ class Runner(object):
                 intrinsic_value = float(stock.intrinsic_value())
                 discounted = bool(intrinsic_value > current_value)
                 # Output discounted stocks only
-                if discounted:
-                    print ("########################")
-                    print ("Scraping symbol: " + symbol)
-                    print ("current value: " + str(current_value))
-                    print ("intrinsic value: " + str(intrinsic_value))
-                    if stock.df is not None:
-                        print ("dataframe: " + stock.df.to_string())
-                    print ("Discounted: " + str(discounted))
-                    print ("\n\n")
+                # if discounted:
+                print ("########################")
+                print ("Scraping symbol: " + symbol)
+                print ("current value: " + str(current_value))
+                print ("intrinsic value: " + str(intrinsic_value))
+                if stock.df is not None:
+                    print ("dataframe: " + stock.df.to_string())
+                print ("Discounted: " + str(discounted))
+                if current_value > 0:
+                    ratio = intrinsic_value/current_value
+                    succes_color = "\033[92m"
+                    fail_color = "\033[91m"
+                    text_color = fail_color
+                    if ratio > 0.7:
+                        text_color = succes_color
+                    print ("intrinsic / current ratio: " + text_color + str(ratio) + "\033[0m")
+                print ("\n\n")
                 
 
 if __name__ == "__main__":
