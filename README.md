@@ -41,7 +41,7 @@ In order to use the Firefox driver make sure `geckodriver` is installed. [see](h
 
 To setup do the following:
 1. Go to the [geckodriver releases page](https://github.com/mozilla/geckodriver/releases). Find the latest version of the driver for your platform and download it. For example:
-`wget https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-<vXXXX>-linux64.tar.gz` - where `XXXX` is the desired version.
+`wget https://github.com/mozilla/geckodriver/releases/download/vXXXX/geckodriver-vXXXX-linux64.tar.gz` - where `XXXX` is the desired version.
 
 2. Extract the file with:
 `tar -xvzf geckodriver*`
