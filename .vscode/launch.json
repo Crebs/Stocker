@@ -11,7 +11,12 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "-m", "Classes.runner", 
+                "-d", "firefoxe", 
+                "-i", "symbols.txt"
+            ]
         }
     ]
 }

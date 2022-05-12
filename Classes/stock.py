@@ -1,30 +1,22 @@
-# import libraries
-from selenium import webdriver
-from bs4 import BeautifulSoup
+#!/usr/bin/python
+import yfinance as yf
 import pandas as pd
 import os
-import time
+from Classes.mstar_scraper import Scraper
 
-
-def isfloat(value):
-  try:
-    float(value)
-    return True
-  except ValueError:
-    return False
 
 index_name = 'Date'
 class Stock(object):
     """Call representing a  Stock."""
 
-    def __init__(self, symbol, web_driver):
+    def __init__(self, symbol, scraper):
         super(Stock, self).__init__()
-        self.soup = None
         self.symbol = symbol
-        self.web_driver = web_driver
-        self.df = None
-        # Need to scrape all the data for the stock before any calculations can be performed
-        self.__scrape()
+        self.scraper = scraper
+        self.df = None 
+        self.intrinsic_value = None
+        self.yahoo = yf.Ticker(self.symbol)
+        self.market_price = None
 
     def save(self):
         file_name = self.symbol + '.csv'
@@ -40,19 +32,38 @@ class Stock(object):
 
     def is_a_buy(self):
         #TODO: need to come up with buying rules.  Also, can we add Machine learning or AI here?
-        iv = self.intrinsic_value()
+        iv = self.intrinsic_value
         try:
-            cv = float(self.current_stock_price())
+            cv = self.market_price
         except Exception:
             cv = 0
-        return iv > cv
+        return float(iv) > float(cv)
 
-    def intrinsic_value(self):
+    def __market_price(self):
+        price = self.yahoo.info["regularMarketPrice"]
+        if price == None:
+            price = self.scraper.get_current_stock_price(self.symbol)
+        return price
+    
+    def scrape(self):
+        self.df = self.__quote_from_disk()
+        if self.df is None:
+            self.df = self.scraper.scrape(self.symbol)
+            self.save()
+        self.yahoo = yf.Ticker(self.symbol)
+        self.market_price = self.__market_price()
+        self.intrinsic_value = float(self.__intrinsic_value())
+
+    def __intrinsic_value(self):
         try:
             # Calcualte Intrinsic Value of the stock
-            cf_range = self.df.iloc[[-6,-2],:]["FCFPS"]
+            cf_range = self.df.iloc[[-6,-2],:]["FCFPS"]  # free cash flow per share
             cf_past = cf_range.iloc[0]
             cf_recent = cf_range.iloc[-1]
+            if float(cf_past) <= 0 or float(cf_recent) <= 0:
+                print("No valid range, skipping intrinsic value calculation")
+                return 0
+        
             annual_growth_rate = ((cf_recent/cf_past)**(1.0/5.0))-1.0
             f_values = []
             for i in range(1,6):
@@ -71,51 +82,6 @@ class Stock(object):
             intrinsic_value = 0
         return intrinsic_value
 
-
-    def current_stock_price(self):
-        current_price = '0'
-        quote_page = 'http://performance.morningstar.com/stock/performance-return.action?t='+self.symbol+'&region=usa&culture=en-US'
-        try:
-            self.web_driver.get(quote_page)
-            soup = BeautifulSoup(self.web_driver.page_source, features="html.parser")
-            current_price = soup.find('span', attrs={'id': 'last-price-value'}).text
-        except Exception as e:
-            print ('Exception get current price for stock symbol: ' + self.symbol)
-            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
-                filehandle.write("%s\n" % self.symbol)
-        return current_price
-
-    def __scrape(self):
-        self.df = self.__quote_from_disk()
-        if self.df is None:
-            self.__get_quote()
-            # Collect Dates
-            if self.soup is not None:
-                profit_header = self.soup.find('th', attrs={'id': 'pr-profit'})
-                dates = []
-                if profit_header is not None:
-                    for sibling in profit_header.next_siblings:
-                        dates.append(sibling.text)
-                    roic_values = self.__roic_values()
-                    fcfps_values = self.__free_cash_flow_per_share()
-                    # initialise data of lists.
-                    data = {'ROIC':roic_values, 'FCFPS':fcfps_values,}
-                    if len(data) > 0:
-                        try:
-                            self.df = pd.DataFrame(data, index=dates)
-                            self.df.index.name = index_name
-                            self.save()
-                        except Exception as e:
-                            print('value issue with ' + self.symbol)
-                            with open('not_found_stock_symbols.txt', 'a+') as filehandle:
-                                filehandle.write("%s\n" % self.symbol)
-                            self.df = None
-            else:
-                print('soup None on ' + self.symbol)
-
-
-        return self.df
-
     def __quote_from_disk(self):
         try:
             df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
@@ -123,45 +89,3 @@ class Stock(object):
         except Exception as e:
             print ('Exception getting quote from disk: ' + self.symbol)
             return None
-
-    # Private method to get stock quote from web scraping
-    def __get_quote(self):
-        if self.df is None:
-            quote_page = 'http://financials.morningstar.com/ratios/r.html?t='+self.symbol+'&region=usa&culture=en-US'
-            try:
-                time.sleep(2.5)
-                self.web_driver.get(quote_page)
-                self.soup = BeautifulSoup(self.web_driver.page_source, features="html.parser")
-            except:
-                print ('General Exception for stock symbol: ' + self.symbol)
-                with open('not_found_stock_symbols.txt', 'a+') as filehandle:
-                    filehandle.write("%s\n" % self.symbol)
-        else:
-            print('Symbol read from disk. Skipping network request.')
-
-
-    def __roic_values(self):
-        # Return on Invested Capital
-        roic_box = self.soup.find('th', attrs={'id': 'i27'})
-        # Collect Values
-        values = []
-        for child in roic_box.parent.findAll('td'):
-            value = child.text
-            if isfloat(value):
-                values.append(float(value))
-            else:
-                values.append(0)
-        return values
-
-
-    def __free_cash_flow_per_share(self):
-        cf_values = []
-        free_cash_flow_per_share_header = self.soup.find('th', attrs={'id': 'i90'})
-        if free_cash_flow_per_share_header is not None:
-            for child in free_cash_flow_per_share_header.parent.findAll('td'):
-                value = child.text
-                if isfloat(value):
-                    cf_values.append(float(child.text))
-                else:
-                    cf_values.append(0)
-        return cf_values

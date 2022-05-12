@@ -2,7 +2,7 @@
 Stocker scrapes stock symobls and the stocks public market information to determine quickly if a stock is a good buy or a goodby.
 
 ## Intrinsic Value
-Intrinsic value is calculated based on this online [TUTORIAL](https://medium.com/popularengineering/how-to-calculate-the-intrinsic-value-of-stocks-like-warren-buffett-f9b97e3738ba)
+Intrinsic value is calculated based on this online [TUTORIAL](http://web.archive.org/web/20191030205524/https://medium.com/popularengineering/how-to-calculate-the-intrinsic-value-of-stocks-like-warren-buffett-f9b97e3738ba)
 
 
 # Setup

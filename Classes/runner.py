@@ -1,38 +1,35 @@
 #!/usr/bin/python
-
-# import library
 from Classes.market import StockMarket
 from Classes.stock import Stock
-from selenium import webdriver
-
+from Classes.mstar_scraper import Scraper
 import sys, getopt
 
 class Runner(object):
     """docstring for Runner."""
 
-    def __init__(self, driver, symbols_file=None):
+    def __init__(self, driver_name, symbols_file=None):
         super(Runner, self).__init__()
-        self.market = StockMarket(driver, symbols_file)
-        self.web_driver = driver
+        self.scraper = Scraper(driver_name)
+        self.market = StockMarket(symbols_file)
 
     def start(self):
         for symbol in self.market.symbols:
             if len(symbol) > 0:
-                stock = Stock(symbol, self.web_driver)
-                current_value = float(stock.current_stock_price())
-                intrinsic_value = float(stock.intrinsic_value())
-                discounted = bool(intrinsic_value > current_value)
+                stock = Stock(symbol, self.scraper)
+                stock.scrape()
+                intrinsic_value = stock.intrinsic_value
+                market_price = stock.market_price
                 # Output discounted stocks only
                 # if discounted:
                 print ("########################")
                 print ("Scraping symbol: " + symbol)
-                print ("current value: " + str(current_value))
+                print ("current value: " + str(market_price))
                 print ("intrinsic value: " + str(intrinsic_value))
                 if stock.df is not None:
                     print ("dataframe: " + stock.df.to_string())
-                print ("Discounted: " + str(discounted))
-                if current_value > 0:
-                    ratio = intrinsic_value/current_value
+                print ("Discounted: " + str(stock.is_a_buy()))
+                if market_price > 0:
+                    ratio = intrinsic_value/market_price
                     succes_color = "\033[92m"
                     fail_color = "\033[91m"
                     text_color = fail_color
@@ -40,12 +37,14 @@ class Runner(object):
                         text_color = succes_color
                     print ("intrinsic / current ratio: " + text_color + str(ratio) + "\033[0m")
                 print ("\n\n")
+    
+    def quit(self):
+        self.scraper.quit()
                 
-
 if __name__ == "__main__":
     inputfile = None
     outputfile = ''
-    driver = None
+    driver_name = ''
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(argv, "d:hi:o:", ["driver=", "ifile=","ofile="])
@@ -57,16 +56,12 @@ if __name__ == "__main__":
             print ('Classes.runner -d <webdriver> -i <inputfile> -o <outputfile>')
             sys.exit()
         elif opt in ("-d", "--driver"):
-            if arg == "safari":
-                driver = webdriver.Safari()
-            elif arg == "firefox":
-                driver = webdriver.Firefox()
-
+            driver_name = arg
         elif opt in ("-i", "--file"):
             inputfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
     
-    runner = Runner(driver, inputfile)
+    runner = Runner(driver_name, inputfile)
     runner.start()
-    driver.quit()
+    runner.quit()
