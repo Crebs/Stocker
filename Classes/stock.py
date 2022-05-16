@@ -68,8 +68,8 @@ class Stock(object):
                 cf_past_index += 1
                 number_years -= 1
                 cf_past = cf_range.iloc[cf_past_index]
-                print("new past value: " + str(cf_past))
-                print("range of years: " + str(number_years))
+                print("New past value: " + str(cf_past))
+                print("Range of years: " + str(number_years))
 
             if float(cf_past) <= 0 or float(cf_recent) <= 0:
                 print("No valid range, skipping intrinsic value calculation")
