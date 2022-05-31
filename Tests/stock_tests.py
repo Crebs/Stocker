@@ -27,7 +27,7 @@ class TestStockClass(unittest.TestCase):
         # Test
         self.sut.save()
         # Validate
-        df = pd.read_csv('Data/' + 'AAPL.csv')
+        df = pd.read_json('Data/' + 'AAPL.json')
         self.assertIsNotNone(df, 'Dataframe should not be None')
 
     def test_intrinsic_value(self):

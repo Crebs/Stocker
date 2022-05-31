@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from Classes.market import StockMarket
 from Classes.stock import Stock
-from Classes.mstar_scraper import Scraper
+from Classes.web_scraper import Scraper
 import sys, getopt
 
 class Runner(object):

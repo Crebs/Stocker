@@ -20,12 +20,12 @@ class Stock(object):
         self.market_price = None
 
     def save(self):
-        file_name = self.symbol + '.csv'
+        file_name = self.symbol + '.json'
         if self.df is not None:
-            self.df.to_csv('Data/' + file_name, index=True)
+            self.df.to_json('Data/' + file_name, index=True)
 
     def delete(self):
-        file_name = self.symbol + '.csv'
+        file_name = self.symbol + '.json'
         try:
             os.remove('Data/'+ file_name)
         except Exception:
@@ -58,7 +58,7 @@ class Stock(object):
 
     def __quote_from_disk(self):
         try:
-            df = pd.read_csv('Data/' + self.symbol + '.csv', index_col=index_name)
+            df = pd.read_json('Data/' + self.symbol + '.json', index_col=index_name)
             return df
         except Exception as e:
             print ('Exception getting quote from disk: ' + self.symbol)

@@ -4,7 +4,7 @@ import pandas as pd
 class TestRun(object):
 
     def intrinsic_value(self):
-        df = pd.read_csv('Data/SONO.csv', index_col="Date")
+        df = pd.read_json('Data/SONO.json', index_col="Date")
         print(df)
         print("##################")
         cf_range = df.iloc[[-6,-2],:]["FCFPS"]  # free cash flow per share
